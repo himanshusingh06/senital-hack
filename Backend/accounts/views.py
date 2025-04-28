@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status, generics
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.core.mail import send_mail
 from django.conf import settings
 from .serializers import UserRegisterSerializer, VerifyEmailSerializer,CustomTokenObtainPairSerializer
@@ -38,16 +39,25 @@ class RegisterView(generics.CreateAPIView):
         try:
             serializer.is_valid(raise_exception=True)
             user = self.perform_create(serializer.validated_data)
-            return Response(
-                {"message": "Account registered successfully", 
-                 "data": {
-                        "first_name":user.first_name,
-                        "last_name":user.last_name,
-                        "username":user.username,
-                        "email": user.email,
-                        "account_type": user.account_type
-                          }
-                 },status=status.HTTP_201_CREATED)
+
+            response_data = {
+                "message": "Account registered successfully",
+                "data": {
+                    "first_name": user.first_name,
+                    "last_name": user.last_name,
+                    "username": user.username,
+                    "email": user.email,
+                    "account_type": user.account_type
+                }
+            }
+
+            # Check if the user is a doctor
+            if user.account_type.lower() == "doctor":
+                refresh = RefreshToken.for_user(user)
+                response_data["access_token"] = str(refresh.access_token)
+                response_data["refresh_token"] = str(refresh)
+
+            return Response(response_data, status=status.HTTP_201_CREATED)
             
         except ValidationError as e:
             return Response(
