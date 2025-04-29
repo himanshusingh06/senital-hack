@@ -8,6 +8,7 @@ import Verify from "./components/auth/verify/Verify";
 import Login from "./components/auth/login/Login";
 import Home from "./components/Home/Home";
 import RegisterClinic from "./components/auth/register/company/RegisterClinic";
+import DoctorDashboard from "./components/DoctorDashboard/doctorDashboard";
 
 
 const router = createBrowserRouter([
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
         path: "home",
         element: <Home />,
       },
+      {
+        path: "doctor/dashboard/",
+        element: <DoctorDashboard />,
+    }
     ],
   },
   {
@@ -45,6 +50,7 @@ const router = createBrowserRouter([
         path: "login/",
         element: <Login />,
       },
+
     ],
   }
 ]);

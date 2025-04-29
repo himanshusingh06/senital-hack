@@ -201,3 +201,62 @@ def get_side_effects(request):
         return Response({'medicine': medicine_name, 'side_effects': response_text})
     except Exception as e:
         return Response({'error': f"AI response failed: {str(e)}"}, status=500)
+    
+
+
+
+# views.py
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+import cv2
+import numpy as np
+import os
+import google.generativeai as genai
+
+# Initialize Gemini configuration once
+GOOGLE_API_KEY = 'AIzaSyDkS1WQkQaqgUOA-NoY2YbRbEX4c16_Ads'  # Replace with your real key
+if not GOOGLE_API_KEY:
+    raise Exception("GOOGLE_API_KEY environment variable not set.")
+genai.configure(api_key=GOOGLE_API_KEY)
+
+class SkinDiseaseAnalyzer:
+    def diagnose(self, image_np):
+        temp_path = "temp_skin_image.jpg"
+        cv2.imwrite(temp_path, image_np)
+
+        uploaded_file = genai.upload_file(path=temp_path, display_name="skin_image")
+        print(f"Uploaded image: {uploaded_file.display_name}")
+        model = genai.GenerativeModel(model_name="gemini-1.5-pro-latest")
+        prompt = (
+            "You are a dermatology expert AI. "
+            "Analyze the uploaded skin image. "
+            "Tell the disease and suggest a short treatment plan. "
+            "Respond strictly within 20 words."
+        )
+
+        response = model.generate_content([uploaded_file, prompt])
+        diagnosis = response.text
+        return diagnosis.strip()
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def diagnose_skin_disease(request):
+    image_file = request.FILES.get('image')
+
+    if not image_file:
+        return Response({'error': 'Image file is required.'}, status=400)
+
+    try:
+        # Convert uploaded file to a numpy array (OpenCV format)
+        file_bytes = np.asarray(bytearray(image_file.read()), dtype=np.uint8)
+        image_np = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+
+        analyzer = SkinDiseaseAnalyzer()
+        diagnosis = analyzer.diagnose(image_np)
+
+        return Response({'diagnosis_and_treatment': diagnosis})
+
+    except Exception as e:
+        return Response({'error': f"Failed to diagnose skin disease: {str(e)}"}, status=500)

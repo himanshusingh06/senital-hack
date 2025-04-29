@@ -30,9 +30,13 @@ function Login() {
       localStorage.setItem('email', response.email); 
       localStorage.setItem('email_verified', response.email_verified); 
       localStorage.setItem('user_id', response.user_id); 
+      localStorage.setItem('account_type', response.account_type);
       toast.success('Login successful!');
 
-      if(response.email_verified == false){
+      if (response.account_type === 'DOCTOR') {
+        navigate('/doctor/dashboard/');}
+
+      else if(response.email_verified == false){
         navigate('/accounts/register/verify');
       }else{
         navigate('/home');
